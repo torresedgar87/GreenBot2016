@@ -33,6 +33,14 @@ public class Pilot extends IRobotAdapter {
     private int currentCommand = 0;
     private final boolean debug = true; // Set to true to get debug messages.
 
+    private int totalDistanceForward = 0;
+    private int totalDistanceBackward = 0;
+    private int changeOfAngle = 0;
+    private int totalAngle = 0;
+    private int actionCount = 0;
+    private boolean bumpLeft = false;
+    private boolean bumpRight = false;
+
     public Pilot(IRobotInterface iRobot, Dashboard dashboard, IOIO ioio)
             throws ConnectionLostException {
         super(iRobot);
@@ -45,48 +53,57 @@ public class Pilot extends IRobotAdapter {
     /** This method is executed when the robot first starts up. **/
     public void initialize() throws ConnectionLostException {
         //what would you like me to do, Clever Human?
-
-
-
+        actionCount = 1;
     }
-
-    private int totalDistance = 0;
-    private int totalAngel = 0;
-    private int actionCount = 1;
 
     /** This method is called repeatedly. **/
     public void loop() throws ConnectionLostException {
-        /*if(actionCount == 1)
-            goStraightSomeDistance(100, 2);
-        else if(actionCount == 2)
-            turnRightSomeDistance(90, 3);
-        else if(actionCount == 3)
-            turnLeftSomeDistance(90, 4);
-        else if(actionCount == 4)
-            reverse(100, 0);*/
-        driveDirect(500,500);
-        totalAngel += getAngle();
-        dashboard.log("" + totalAngel);
+        if(actionCount == 1){
+            goStraightSomeDistance(1000000, 4, 0);
+        }else if(actionCount == 2){
+            turnLeftSomeDistance(90, 1);
+        }else if(actionCount == 3){
+            turnRightSomeDistance(90, 1);
+        }
+        else if(actionCount == 4){
+            if(bumpRight)
+            {
+                reverse(200, 2);
+            }else {
+                reverse(200, 3);
+            }
+        }
     }
 
-    public void goStraightSomeDistance(int distance, int action) throws ConnectionLostException{
-        totalDistance += getDistance();
-        if(totalDistance > distance || bumpRight() || bumpLeft()) {
+    public void goStraightSomeDistance(int distanceToTravel, int ifBumpAction, int actionWhenDone) throws ConnectionLostException{
+        totalDistanceForward += getDistance();
+
+        if(bumpRight()) {
             driveDirect(0, 0);
-            totalDistance = 0;
-            actionCount = action;
-        }else{
+            bumpRight = true;
+            actionCount = ifBumpAction;
+        }
+        else if(bumpLeft()){
+            driveDirect(0, 0);
+            bumpLeft = true;
+            actionCount = ifBumpAction;
+        }
+        else if(totalDistanceForward > distanceToTravel) {
+            driveDirect(0, 0);
+            totalDistanceForward = 0;
+            actionCount = actionWhenDone;
+        }
+        else{
             driveDirect(200, 200);
         }
-
     }
 
     public void turnRightSomeDistance(int angle, int action) throws ConnectionLostException {
-        totalAngel += Math.abs(getAngle());
+        changeOfAngle += Math.abs(getAngle());
 
-        if(totalAngel > angle) {
+        if(changeOfAngle > angle) {
             driveDirect(0, 0);
-            totalAngel = 0;
+            changeOfAngle = 0;
             actionCount = action;
         }else{
             driveDirect(200, -200);
@@ -94,11 +111,11 @@ public class Pilot extends IRobotAdapter {
     }
 
     public void turnLeftSomeDistance(int angle, int action) throws ConnectionLostException {
-        totalAngel += getAngle();
+        changeOfAngle += getAngle();
 
-        if(totalAngel > angle){
+        if(changeOfAngle > angle){
             driveDirect(0, 0);
-            totalAngel = 0;
+            changeOfAngle = 0;
             actionCount = action;
         }else{
             driveDirect(-200, 200);
@@ -106,19 +123,22 @@ public class Pilot extends IRobotAdapter {
     }
 
     public void reverse(int distance, int action) throws ConnectionLostException {
-        totalDistance += Math.abs(getDistance());
+        totalDistanceBackward += Math.abs(getDistance());
 
-        if(totalDistance > distance) {
+        if(totalDistanceBackward > distance) {
             driveDirect(0, 0);
-            totalDistance = 0;
+            totalDistanceBackward = 0;
             actionCount = action;
+            bumpRight = false;
+            bumpLeft = false;
         }else{
+            SystemClock.sleep(1000);
             driveDirect(-200, -200);
         }
     }
 
     public boolean bumpRight() throws ConnectionLostException {
-        //readSensors(SENSORS_BUMPS_AND_WHEEL_DROPS);
+        readSensors(SENSORS_BUMPS_AND_WHEEL_DROPS);
         if(isBumpRight()){
             dashboard.log("Ouch");
             return true;
@@ -127,7 +147,7 @@ public class Pilot extends IRobotAdapter {
     }
 
     public boolean bumpLeft() throws ConnectionLostException {
-        //readSensors(SENSORS_BUMPS_AND_WHEEL_DROPS);
+        readSensors(SENSORS_BUMPS_AND_WHEEL_DROPS);
         if(isBumpLeft()){
             dashboard.log("owl");
             return true;
@@ -135,10 +155,32 @@ public class Pilot extends IRobotAdapter {
         return false;
     }
 
-    public boolean wallSensor () throws ConnectionLostException{
-        dashboard.log("" + getWallSignal());
-        return false;
+    public int getWallStrength() throws ConnectionLostException{
+        readSensors(SENSORS_WALL_SIGNAL);
+        return getWallSignal();
     }
+
+    public int getInfrared() throws ConnectionLostException {
+        readSensors(SENSORS_INFRARED_BYTE);
+        return getInfraredByte();
+    }
+
+    public void autoAngleCorrect() throws ConnectionLostException
+    {
+        if(Math.abs(totalAngle) > 5)
+        {
+            if(totalAngle > 5)
+            {
+                turnRightSomeDistance(5, 1);
+            }
+            else if(totalAngle < -5)
+            {
+                turnLeftSomeDistance(5, 1);
+            }
+            totalAngle = 0;
+        }
+    }
+
     /**
      * This method determines where to go next. This is a very simple Tortoise-like
      * implementation, but a more advanced implementation could take into account
