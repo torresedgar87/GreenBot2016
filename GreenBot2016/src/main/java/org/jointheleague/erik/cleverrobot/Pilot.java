@@ -40,6 +40,9 @@ public class Pilot extends IRobotAdapter {
     private int actionCount = 0;
     private boolean bumpLeft = false;
     private boolean bumpRight = false;
+    private boolean bumpCenter = false;
+    private int[] bumpValues;
+    //private int bumpThreshold = 1000;
 
     public Pilot(IRobotInterface iRobot, Dashboard dashboard, IOIO ioio)
             throws ConnectionLostException {
@@ -59,34 +62,34 @@ public class Pilot extends IRobotAdapter {
     /** This method is called repeatedly. **/
     public void loop() throws ConnectionLostException {
         if(actionCount == 1){
-            goStraightSomeDistance(1000000, 4, 0);
+            goStraightSomeDistance(1000000, 2, 3, 2, 4);
         }else if(actionCount == 2){
             turnLeftSomeDistance(90, 1);
+            SystemClock.sleep(1000);
         }else if(actionCount == 3){
             turnRightSomeDistance(90, 1);
+            SystemClock.sleep(1000);
         }
         else if(actionCount == 4){
-            if(bumpRight)
-            {
-                reverse(200, 2);
-            }else {
-                reverse(200, 3);
-            }
+            //reverse(1000000, 1);
+            driveDirect(0, 0);
         }
     }
 
-    public void goStraightSomeDistance(int distanceToTravel, int ifBumpAction, int actionWhenDone) throws ConnectionLostException{
+    public void goStraightSomeDistance(int distanceToTravel, int ifBumpRight, int ifBumpLeft, int ifBumpCenter, int actionWhenDone) throws ConnectionLostException{
         totalDistanceForward += getDistance();
-
+        getLightBumpValues();
         if(bumpRight()) {
             driveDirect(0, 0);
-            bumpRight = true;
-            actionCount = ifBumpAction;
+            actionCount = ifBumpRight;
         }
         else if(bumpLeft()){
             driveDirect(0, 0);
-            bumpLeft = true;
-            actionCount = ifBumpAction;
+            actionCount = ifBumpLeft;
+        }
+        else if(bumpCenter()) {
+            driveDirect(0, 0);
+            actionCount = ifBumpCenter;
         }
         else if(totalDistanceForward > distanceToTravel) {
             driveDirect(0, 0);
@@ -139,21 +142,63 @@ public class Pilot extends IRobotAdapter {
 
     public boolean bumpRight() throws ConnectionLostException {
         readSensors(SENSORS_BUMPS_AND_WHEEL_DROPS);
+
         if(isBumpRight()){
-            dashboard.log("Ouch");
             return true;
         }
+
+        int rightSum = bumpValues[4] + bumpValues[5];
+        int leftSum = bumpValues[0] + bumpValues[1];
+        int centerSum = bumpValues[2] + bumpValues[3];
+
+        if(rightSum > leftSum || rightSum > centerSum){
+
+            if(bumpValues[4] > 500 || bumpValues[5] > 500){
+                return true;
+            }
+        }
+
         return false;
     }
 
+
     public boolean bumpLeft() throws ConnectionLostException {
         readSensors(SENSORS_BUMPS_AND_WHEEL_DROPS);
+
         if(isBumpLeft()){
-            dashboard.log("owl");
             return true;
         }
+
+        int rightSum = bumpValues[4] + bumpValues[5];
+        int leftSum = bumpValues[0] + bumpValues[1];
+        int centerSum = bumpValues[2] + bumpValues[3];
+
+        if(leftSum > rightSum || leftSum > centerSum){
+
+            if(bumpValues[0] > 500 || bumpValues[1] > 500){
+                return true;
+            }
+        }
+
         return false;
     }
+
+    public boolean bumpCenter() throws ConnectionLostException {
+        int rightSum = bumpValues[4] + bumpValues[5];
+        int leftSum = bumpValues[0] + bumpValues[1];
+        int centerSum = bumpValues[2] + bumpValues[3];
+
+        if(centerSum > leftSum || centerSum > rightSum){
+
+            if(bumpValues[2] > 1000 || bumpValues[3] > 1000){
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
 
     public int getWallStrength() throws ConnectionLostException{
         readSensors(SENSORS_WALL_SIGNAL);
@@ -179,6 +224,11 @@ public class Pilot extends IRobotAdapter {
             }
             totalAngle = 0;
         }
+    }
+    public void getLightBumpValues() throws ConnectionLostException
+    {
+        readSensors(SENSORS_GROUP_ID101);
+        bumpValues = getLightBumps();
     }
 
     /**
