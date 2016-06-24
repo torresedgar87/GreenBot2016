@@ -59,10 +59,12 @@ public class Pilot extends IRobotAdapter {
 
     public void goStraightSomeDistance() throws ConnectionLostException {
 
-        if(bumpRight() && hasBumpedRight == false){
+        int[] bumpSums = collectBumpValues();
+
+        if(bumpRight(bumpSums) && hasBumpedRight == false){
             hasBumpedRight = true;
         }
-        else if(bumpCenter() && hasBumpedCenter == false) {
+        else if(bumpCenter(bumpSums) && hasBumpedCenter == false) {
             hasBumpedCenter = true;
             driveDirect(0, 0);
             SystemClock.sleep(500);
@@ -99,18 +101,22 @@ public class Pilot extends IRobotAdapter {
 
     }
 
-    public boolean bumpRight() throws ConnectionLostException {
-        readSensors(SENSORS_BUMPS_AND_WHEEL_DROPS);
-        if (isBumpRight()) {
-            return true;
-        }
-
+    public int[] collectBumpValues() throws ConnectionLostException {
         getLightBumpValues();
         int rightSum = bumpValues[4] + bumpValues[5];
         int leftSum = bumpValues[0] + bumpValues[1];
         int centerSum = bumpValues[2] + bumpValues[3];
 
-        if (rightSum > leftSum || rightSum > centerSum) {
+        return new int[]{ rightSum, centerSum, leftSum };
+    }
+
+    public boolean bumpRight(int[] bumpSums) throws ConnectionLostException {
+        readSensors(SENSORS_BUMPS_AND_WHEEL_DROPS);
+        if (isBumpRight()) {
+            return true;
+        }
+
+        if (bumpSums[0] > bumpSums[2] || bumpSums[0] > bumpSums[1]) {
 
             if (bumpValues[4] > 500 || bumpValues[5] > 500) {
                 return true;
@@ -121,18 +127,13 @@ public class Pilot extends IRobotAdapter {
     }
 
 
-    public boolean bumpLeft() throws ConnectionLostException {
+    public boolean bumpLeft(int[] bumpSums) throws ConnectionLostException {
         readSensors(SENSORS_BUMPS_AND_WHEEL_DROPS);
         if (isBumpLeft()) {
             return true;
         }
 
-        getLightBumpValues();
-        int rightSum = bumpValues[4] + bumpValues[5];
-        int leftSum = bumpValues[0] + bumpValues[1];
-        int centerSum = bumpValues[2] + bumpValues[3];
-
-        if (leftSum > rightSum || leftSum > centerSum) {
+        if (bumpSums[2] > bumpSums[0] || bumpSums[2] > bumpSums[1]) {
 
             if (bumpValues[0] > 500 || bumpValues[1] > 500) {
                 return true;
@@ -142,13 +143,9 @@ public class Pilot extends IRobotAdapter {
         return false;
     }
 
-    public boolean bumpCenter() throws ConnectionLostException {
-        getLightBumpValues();
-        int rightSum = bumpValues[4] + bumpValues[5];
-        int leftSum = bumpValues[0] + bumpValues[1];
-        int centerSum = bumpValues[2] + bumpValues[3];
+    public boolean bumpCenter(int[] bumpSums) throws ConnectionLostException {
 
-        if (centerSum > leftSum || centerSum > rightSum) {
+        if (bumpSums[1] > bumpSums[2] || bumpSums[1] > bumpSums[0]) {
 
             if (bumpValues[2] > 500 || bumpValues[3] > 500) {
                 return true;
