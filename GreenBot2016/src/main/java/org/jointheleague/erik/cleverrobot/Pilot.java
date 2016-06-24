@@ -1,9 +1,7 @@
 package org.jointheleague.erik.cleverrobot;
 
 import android.os.SystemClock;
-import android.util.Log;
 
-import org.jointheleague.erik.cleverrobot.sensors.UltraSonicSensors;
 import org.jointheleague.erik.irobot.IRobotAdapter;
 import org.jointheleague.erik.irobot.IRobotInterface;
 
@@ -61,10 +59,13 @@ public class Pilot extends IRobotAdapter {
 
         int[] bumpSums = collectBumpValues();
 
-        if(bumpRight(bumpSums) && hasBumpedRight == false){
+        if(bumpRight()){
+            hasBumpedCenter = true;
+        }
+        else if(lightBumpRightLargest(bumpSums) && hasBumpedRight == false){
             hasBumpedRight = true;
         }
-        else if(bumpCenter(bumpSums) && hasBumpedCenter == false) {
+        else if(lightBumpCenterLargest(bumpSums) && hasBumpedCenter == false) {
             hasBumpedCenter = true;
             driveDirect(0, 0);
             SystemClock.sleep(500);
@@ -75,6 +76,7 @@ public class Pilot extends IRobotAdapter {
             driveDirect(100,200);
         }
         else if(hasBumpedCenter == true && changeOfAngle < 90){
+            distanceBeforeTurn = 0;
             turnLeftSomeDistance();
         }
         else{
@@ -110,15 +112,28 @@ public class Pilot extends IRobotAdapter {
         return new int[]{ rightSum, centerSum, leftSum };
     }
 
-    public boolean bumpRight(int[] bumpSums) throws ConnectionLostException {
+    public boolean bumpRight() throws ConnectionLostException{
         readSensors(SENSORS_BUMPS_AND_WHEEL_DROPS);
         if (isBumpRight()) {
+            dashboard.log("it bumped right");
             return true;
         }
+        return false;
+    }
 
+    public boolean bumpLeft() throws ConnectionLostException{
+        readSensors(SENSORS_BUMPS_AND_WHEEL_DROPS);
+        if (isBumpLeft()) {
+            dashboard.log("it bumped right");
+            return true;
+        }
+        return false;
+    }
+
+    public boolean lightBumpRightLargest(int[] bumpSums) throws ConnectionLostException {
         if (bumpSums[0] > bumpSums[2] || bumpSums[0] > bumpSums[1]) {
 
-            if (bumpValues[4] > 500 || bumpValues[5] > 500) {
+            if (bumpValues[4] > 200 || bumpValues[5] > 200) {
                 return true;
             }
         }
@@ -128,14 +143,9 @@ public class Pilot extends IRobotAdapter {
 
 
     public boolean bumpLeft(int[] bumpSums) throws ConnectionLostException {
-        readSensors(SENSORS_BUMPS_AND_WHEEL_DROPS);
-        if (isBumpLeft()) {
-            return true;
-        }
-
         if (bumpSums[2] > bumpSums[0] || bumpSums[2] > bumpSums[1]) {
 
-            if (bumpValues[0] > 500 || bumpValues[1] > 500) {
+            if (bumpValues[0] > 200 || bumpValues[1] > 200) {
                 return true;
             }
         }
@@ -143,11 +153,11 @@ public class Pilot extends IRobotAdapter {
         return false;
     }
 
-    public boolean bumpCenter(int[] bumpSums) throws ConnectionLostException {
+    public boolean lightBumpCenterLargest(int[] bumpSums) throws ConnectionLostException {
 
         if (bumpSums[1] > bumpSums[2] || bumpSums[1] > bumpSums[0]) {
 
-            if (bumpValues[2] > 500 || bumpValues[3] > 500) {
+            if (bumpValues[2] > 200 || bumpValues[3] > 200) {
                 return true;
             }
         }
