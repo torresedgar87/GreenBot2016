@@ -60,7 +60,11 @@ public class Pilot extends IRobotAdapter {
         int[] bumpSums = collectBumpValues();
 
         if(bumpRight()){
+            reverse(100, 200);
             hasBumpedCenter = true;
+        }
+        else if(bumpLeft()) {
+            reverse(200, 100);
         }
         else if(lightBumpRightLargest(bumpSums) && hasBumpedRight == false){
             hasBumpedRight = true;
@@ -99,8 +103,11 @@ public class Pilot extends IRobotAdapter {
         driveDirect(-200, 200);
     }
 
-    public void reverse() throws ConnectionLostException {
-
+    public void reverse(int leftWheel, int rightWheel) throws ConnectionLostException {
+        drive(0, 0);
+        SystemClock.sleep(200);
+        drive(-leftWheel, -rightWheel);
+        SystemClock.sleep(500);
     }
 
     public int[] collectBumpValues() throws ConnectionLostException {
