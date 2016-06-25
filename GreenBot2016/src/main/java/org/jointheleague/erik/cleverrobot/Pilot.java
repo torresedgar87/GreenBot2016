@@ -27,12 +27,17 @@ public class Pilot extends IRobotAdapter {
     private boolean hasBumpedRight = false;
     private boolean hasBumpedLeft = false;
     private boolean hasBumpedCenter = false;
-    int changeOfAngle = 0;
+    int changeOfAngleLeft = 0;
+    int changeOfAngleRight = 0;
+    private int doneWithRace = 0;
+
+    int rightWheelSpeed = 480;
+    int leftWheelSpeed = 500;
 
     public Pilot(IRobotInterface iRobot, Dashboard dashboard, IOIO ioio)
             throws ConnectionLostException {
         super(iRobot);
-        safe();
+        //safe();
         this.dashboard = dashboard;
         dashboard.log(dashboard.getString(R.string.hello));
     }
@@ -52,10 +57,42 @@ public class Pilot extends IRobotAdapter {
      * This method is called repeatedly.
      **/
     public void loop() throws ConnectionLostException {
-        goStraightSomeDistance();
+        traverseMaze();
     }
 
-    public void goStraightSomeDistance() throws ConnectionLostException {
+    public void dragRace() throws ConnectionLostException
+    {
+        if(bumpRight() || lightBumpRightLargest(collectBumpValues())){
+            turnLeftSomeDistance();
+            SystemClock.sleep(100);
+        }
+        else if(bumpLeft() || lightBumpLeftLargest(collectBumpValues())){
+            turnRightSomeDistance();
+            SystemClock.sleep(100);
+        }
+
+        if(lightBumpCenterLargest(collectBumpValues()) && doneWithRace != 2)
+        {
+
+            turnLeftSomeDistance();
+            SystemClock.sleep(1820);
+            doneWithRace += 1;
+
+        }
+
+        if (doneWithRace != 2) {
+            driveDirect(400, 393);
+        }else
+        {
+            driveDirect(0,0);
+        }
+    }
+
+    public void traverseMaze() throws ConnectionLostException {
+
+        int infrared = getInfrared();
+
+        dashboard.log("infrared " + infrared);
 
         int[] bumpSums = collectBumpValues();
 
@@ -64,7 +101,12 @@ public class Pilot extends IRobotAdapter {
             hasBumpedCenter = true;
         }
         else if(bumpLeft()) {
-            reverse(200, 100);
+            reverse(200, 200);
+            SystemClock.sleep(500);
+            while(changeOfAngleRight < 90) {
+                turnRightSomeDistance();
+            }
+            drive(0, 0);
         }
         else if(lightBumpRightLargest(bumpSums) && hasBumpedRight == false){
             hasBumpedRight = true;
@@ -72,21 +114,22 @@ public class Pilot extends IRobotAdapter {
         else if(lightBumpCenterLargest(bumpSums) && hasBumpedCenter == false) {
             hasBumpedCenter = true;
             driveDirect(0, 0);
-            SystemClock.sleep(500);
+            SystemClock.sleep(200);
         }
 
         if(hasBumpedRight == true && distanceBeforeTurn < 1000 && hasBumpedCenter == false){
             distanceBeforeTurn += getDistance();
             driveDirect(100,200);
         }
-        else if(hasBumpedCenter == true && changeOfAngle < 90){
+        else if(hasBumpedCenter == true && changeOfAngleLeft < 90){
             distanceBeforeTurn = 0;
             turnLeftSomeDistance();
         }
         else{
-            driveDirect(300,100);
+            driveDirect(250,100);
             distanceBeforeTurn = 0;
-            changeOfAngle = 0;
+            changeOfAngleLeft = 0;
+            changeOfAngleRight = 0;
             hasBumpedRight = false;
             hasBumpedCenter = false;
             getAngle();
@@ -95,11 +138,12 @@ public class Pilot extends IRobotAdapter {
     }
 
     public void turnRightSomeDistance() throws ConnectionLostException {
-
+        changeOfAngleRight += Math.abs(getAngle());
+        driveDirect(200, -200);
     }
 
     public void turnLeftSomeDistance() throws ConnectionLostException {
-        changeOfAngle += Math.abs(getAngle());
+        changeOfAngleLeft += Math.abs(getAngle());
         driveDirect(-200, 200);
     }
 
@@ -149,10 +193,10 @@ public class Pilot extends IRobotAdapter {
     }
 
 
-    public boolean bumpLeft(int[] bumpSums) throws ConnectionLostException {
+    public boolean lightBumpLeftLargest(int[] bumpSums) throws ConnectionLostException {
         if (bumpSums[2] > bumpSums[0] || bumpSums[2] > bumpSums[1]) {
 
-            if (bumpValues[0] > 200 || bumpValues[1] > 200) {
+            if (bumpValues[0] > 100 || bumpValues[1] > 100) {
                 return true;
             }
         }
@@ -193,7 +237,9 @@ public class Pilot extends IRobotAdapter {
         driveDirect(0, 0);
     }
 
-    public void storingPoints(Point p1) throws ConnectionLostException{
-
+    public void keepBumping() throws ConnectionLostException {
+        reverse(200, 200);
+        reverse(200, 200);
+        driveDirect(0, 0);
     }
 }
