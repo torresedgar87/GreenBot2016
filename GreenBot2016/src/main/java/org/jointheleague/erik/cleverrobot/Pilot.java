@@ -37,7 +37,7 @@ public class Pilot extends IRobotAdapter {
     public Pilot(IRobotInterface iRobot, Dashboard dashboard, IOIO ioio)
             throws ConnectionLostException {
         super(iRobot);
-        //safe();
+        safe();
         this.dashboard = dashboard;
         dashboard.log(dashboard.getString(R.string.hello));
     }
@@ -81,7 +81,7 @@ public class Pilot extends IRobotAdapter {
         }
 
         if (doneWithRace != 2) {
-            driveDirect(400, 393);
+            driveDirect(500, 493);
         }else
         {
             driveDirect(0,0);
@@ -101,17 +101,16 @@ public class Pilot extends IRobotAdapter {
             hasBumpedCenter = true;
         }
         else if(bumpLeft()) {
-            reverse(200, 200);
+            /*reverse(200, 200);
+            SystemClock.sleep(500);*/
+            drive(-200, 90);
             SystemClock.sleep(500);
-            while(changeOfAngleRight < 90) {
-                turnRightSomeDistance();
-            }
             drive(0, 0);
         }
-        else if(lightBumpRightLargest(bumpSums) && hasBumpedRight == false){
+        else if(lightBumpRightLargest(bumpSums) && hasBumpedRight == false && infrared < 250){
             hasBumpedRight = true;
         }
-        else if(lightBumpCenterLargest(bumpSums) && hasBumpedCenter == false) {
+        else if(lightBumpCenterLargest(bumpSums) && hasBumpedCenter == false && infrared < 250) {
             hasBumpedCenter = true;
             driveDirect(0, 0);
             SystemClock.sleep(200);
@@ -166,7 +165,6 @@ public class Pilot extends IRobotAdapter {
     public boolean bumpRight() throws ConnectionLostException{
         readSensors(SENSORS_BUMPS_AND_WHEEL_DROPS);
         if (isBumpRight()) {
-            dashboard.log("it bumped right");
             return true;
         }
         return false;
@@ -175,7 +173,6 @@ public class Pilot extends IRobotAdapter {
     public boolean bumpLeft() throws ConnectionLostException{
         readSensors(SENSORS_BUMPS_AND_WHEEL_DROPS);
         if (isBumpLeft()) {
-            dashboard.log("it bumped right");
             return true;
         }
         return false;
