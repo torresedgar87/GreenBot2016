@@ -31,8 +31,11 @@ public class Pilot extends IRobotAdapter {
     int changeOfAngleRight = 0;
     private int doneWithRace = 0;
 
-    int rightWheelSpeed = 480;
-    int leftWheelSpeed = 500;
+    int rightWheelSpeed = 500;
+    int leftWheelSpeed = 490;
+    int numModulus = 3;
+    int count = 0;
+    boolean forMineral = false;
 
     public Pilot(IRobotInterface iRobot, Dashboard dashboard, IOIO ioio)
             throws ConnectionLostException {
@@ -57,7 +60,29 @@ public class Pilot extends IRobotAdapter {
      * This method is called repeatedly.
      **/
     public void loop() throws ConnectionLostException {
-        traverseMaze();
+        mineralChallenge();
+    }
+
+    public void mineralChallenge() throws ConnectionLostException {
+        count++;
+
+        if(bumpLeft() || bumpRight()){
+            dashboard.log("bumped");
+            forMineral = true;
+        }
+
+        if(forMineral){
+            traverseMaze();
+        }
+        else {
+            driveDirect(leftWheelSpeed, rightWheelSpeed);
+            if (count % numModulus == 0) {
+                leftWheelSpeed--;
+            }
+            if (leftWheelSpeed % 50 == 0) {
+                numModulus++;
+            }
+        }
     }
 
     public void dragRace() throws ConnectionLostException
