@@ -31,8 +31,9 @@ public class Pilot extends IRobotAdapter {
     int changeOfAngleRight = 0;
     private int doneWithRace = 0;
 
-    int rightWheelSpeed = 500;
-    int leftWheelSpeed = 490;
+    int rightWheelSpeed = 51;
+    int leftWheelSpeed = 500;
+
     int numModulus = 3;
     int count = 0;
     boolean forMineral = false;
@@ -40,7 +41,6 @@ public class Pilot extends IRobotAdapter {
     public Pilot(IRobotInterface iRobot, Dashboard dashboard, IOIO ioio)
             throws ConnectionLostException {
         super(iRobot);
-        safe();
         this.dashboard = dashboard;
         dashboard.log(dashboard.getString(R.string.hello));
     }
@@ -54,6 +54,11 @@ public class Pilot extends IRobotAdapter {
         visitedPoints = new ArrayList<Point>();
         getAngle();
         getDistance();
+
+        driveDirect(500,494);
+        SystemClock.sleep(8000);
+        dashboard.log("done driving");
+        driveDirect(0,0);
     }
 
     /**
@@ -76,10 +81,14 @@ public class Pilot extends IRobotAdapter {
         }
         else {
             driveDirect(leftWheelSpeed, rightWheelSpeed);
+            dashboard.log("Count " + count + " modulus " + numModulus + " = " +  (count % numModulus) + " rightWheel " + rightWheelSpeed);
+
             if (count % numModulus == 0) {
-                leftWheelSpeed--;
+                rightWheelSpeed += 2;
+                dashboard.log("add right speed if");
             }
-            if (leftWheelSpeed % 50 == 0) {
+
+            if (rightWheelSpeed % 50 == 0) {
                 numModulus++;
             }
         }
@@ -128,7 +137,7 @@ public class Pilot extends IRobotAdapter {
         else if(bumpLeft()) {
             /*reverse(200, 200);
             SystemClock.sleep(500);*/
-            drive(-200, 90);
+            drive(-200, -90);
             SystemClock.sleep(500);
             drive(0, 0);
         }
@@ -150,7 +159,7 @@ public class Pilot extends IRobotAdapter {
             turnLeftSomeDistance();
         }
         else{
-            driveDirect(250,100);
+            driveDirect(400,50);
             distanceBeforeTurn = 0;
             changeOfAngleLeft = 0;
             changeOfAngleRight = 0;
